@@ -58,11 +58,8 @@ def _safe_import(module_path: str, registry_name: str) -> Dict[str, Any]:
 
 _FILE_TOOLS      = _safe_import("app.services.tools.file_tools",     "FILE_TOOLS")
 _WEB_TOOLS       = _safe_import("app.services.tools.web_tools",      "WEB_TOOLS")
-_EMAIL_TOOLS     = _safe_import("app.services.tools.email_tools",    "EMAIL_TOOLS")
 _PYTHON_TOOLS    = _safe_import("app.services.tools.python_tools",   "PYTHON_TOOLS")
-_SQL_TOOLS       = _safe_import("app.services.tools.sql_tools",      "SQL_TOOLS")
 _HTTP_TOOLS      = _safe_import("app.services.tools.http_tools",     "HTTP_TOOLS")
-_CALENDAR_TOOLS  = _safe_import("app.services.tools.calendar_tools", "CALENDAR_TOOLS")
 
 
 # =========================================================
@@ -72,11 +69,8 @@ _CALENDAR_TOOLS  = _safe_import("app.services.tools.calendar_tools", "CALENDAR_T
 ALL_TOOLS: Dict[str, Any] = {
     **_FILE_TOOLS,
     **_WEB_TOOLS,
-    **_EMAIL_TOOLS,
     **_PYTHON_TOOLS,
-    **_SQL_TOOLS,
     **_HTTP_TOOLS,
-    **_CALENDAR_TOOLS,
 }
 
 logger.info(

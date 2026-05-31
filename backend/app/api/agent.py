@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import uuid
 
-from app.core.workflows import _make_human_message, _make_ai_message
+# from app.core.workflows import _make_human_message, _make_ai_message
 
 class AgentRequestSchema(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000)
@@ -26,7 +26,7 @@ async def agent_input_injestion(request: Request, input: AgentRequestSchema):
 
     # graph = request.app.state.graph
     agent = request.app.state.agent
-    human_message = _make_human_message(input.message)
+    # human_message = _make_human_message(input.message)
     try:
         # result = graph.invoke(
         #     {

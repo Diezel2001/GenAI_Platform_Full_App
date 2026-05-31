@@ -26,8 +26,6 @@ from langgraph.graph.message import add_messages
 
 from langchain_core.messages import (
     BaseMessage,
-    HumanMessage,
-    AIMessage,
 )
 
 from app.services.skill_manager import Skill
@@ -214,7 +212,7 @@ class WorkerAgent:
 You are a planner agent.
 
 Your job:
-- determine next objective,
+- determine next objective and or goal,
 - determine whether a tool is needed,
 - determine whether task is complete.
 
@@ -482,9 +480,9 @@ OUTPUT JSON:
 
     def _planner_router(self, state: WorkerState):
 
-        planner = PlannerSchema.model_validate(
-            state["planner"]
-        )
+        planner_dict = state["planner"]
+
+        planner = PlannerSchema.model_validate(planner_dict)
 
         if planner.done:
             return "final"
@@ -916,7 +914,11 @@ OUTPUT JSON:
         )
 
         if fenced:
-            return json.loads(fenced.group(1))
+            try:
+                parsed = json.loads(fenced.group(1))
+                return parsed
+            except json.JSONDecodeError as e:
+                pass
 
         s = str(text)
         start = s.find("{")
@@ -949,7 +951,11 @@ OUTPUT JSON:
                 elif ch == "}":
                     depth -= 1
                     if depth == 0:
-                        return json.loads(s[start:i + 1])
+                        try:
+                            parsed = json.loads(s[start:i + 1])
+                            return parsed
+                        except json.JSONDecodeError as e:
+                            raise
 
         raise ValueError(
             f"Malformed JSON in output: {text[:300]}"
@@ -985,7 +991,9 @@ OUTPUT JSON:
 
                 text = getattr(raw, "content", str(raw))
 
-                return self._extract_json(text)
+                result = self._extract_json(text)
+
+                return result
 
             except (ValueError, json.JSONDecodeError) as e:
 
@@ -1007,43 +1015,4 @@ OUTPUT JSON:
         max_pairs: int = 5,
     ) -> str:
 
-        if not messages:
-            return "No conversation history."
-
-        filtered = [
-            m for m in messages
-            if isinstance(
-                m,
-                (HumanMessage, AIMessage)
-            )
-        ]
-
-        filtered = filtered[-(max_pairs * 2):]
-
-        lines = []
-
-        for msg in filtered:
-
-            if isinstance(msg, HumanMessage):
-                role = "USER"
-
-            elif isinstance(msg, AIMessage):
-                role = "ASSISTANT"
-
-            else:
-                continue
-
-            content = str(msg.content).strip()
-
-            if len(content) > 1200:
-                content = content[:1200] + "..."
-
-            lines.append(
-                f"{role}: {content}"
-            )
-
-        return (
-            "\n".join(lines)
-            if lines
-            else "No conversation history."
-        )
+        return "No conversation history."

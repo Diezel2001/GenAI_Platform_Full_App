@@ -68,14 +68,19 @@ async def lifespan(app: FastAPI):
 
         from app.core.agents.worker_agent import WorkerAgent
         from app.services.llm.Llmwrapper import llm
+        from app.services.tools import get_tools
 
         myAgent = WorkerAgent(
             llm=llm,
             checkpointer=checkpointer,
-            tools={})
+            tools=get_tools("read_file"))
 
         app.state.agent = myAgent
         app.state.checkpointer = checkpointer
+
+        from app.utility.langgraphViz import visualize_langgraph
+
+        visualize_langgraph(myAgent.graph, "worker_agent.png")
 
         print("🚀 Application starting up...")
 
