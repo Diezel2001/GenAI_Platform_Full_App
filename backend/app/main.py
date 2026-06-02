@@ -66,14 +66,14 @@ async def lifespan(app: FastAPI):
     with RedisSaver.from_conn_string(REDIS_URL) as checkpointer:
         checkpointer.setup()
 
-        from app.core.agents.worker_agent import WorkerAgent
+        from app.services.agents.worker_agent import WorkerAgent
         from app.services.llm.Llmwrapper import llm
-        from app.services.tools import get_tools
+        from app.services.tools import get_tools, _FILE_TOOLS, _CLI_TOOLS
 
         myAgent = WorkerAgent(
             llm=llm,
             checkpointer=checkpointer,
-            tools=get_tools("read_file"))
+            tools={**_FILE_TOOLS, **_CLI_TOOLS })
 
         app.state.agent = myAgent
         app.state.checkpointer = checkpointer

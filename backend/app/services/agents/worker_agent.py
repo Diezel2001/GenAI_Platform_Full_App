@@ -45,13 +45,13 @@ logger = logging.getLogger(__name__)
 
 class PlannerSchema(BaseModel):
 
-    thought: str
+    thought: str = ""
 
     needs_tool: bool
 
     done: bool
 
-    goal: str
+    goal: str = ""
 
     final_answer: Optional[str] = None
 
@@ -270,6 +270,7 @@ RULES:
 - Do NOT select tools.
 - Do NOT generate arguments.
 - If task is complete, mark done=true.
+- When done=true, goal may be set to an empty string.
 
 OUTPUT JSON:
 {{
@@ -301,7 +302,10 @@ AVAILABLE TOOLS:
 RULES:
 - ONLY use listed tools.
 - NEVER invent tools.
-- If no tool needed choose FINAL.
+- If you are using a tool, set action="TOOL".
+- If no tool is needed and the task is complete, set action="FINAL".
+- The "action" field must ALWAYS be exactly the literal string "TOOL" or "FINAL".
+- Do NOT put a tool name in the "action" field. Tool names go in "tool_name".
 
 OUTPUT JSON:
 {{
@@ -325,12 +329,15 @@ OBSERVATIONS:
 RULES:
 - Use observations as source of truth.
 - Do not invent unsupported facts.
+- sources_used must be a list of tool name strings only (e.g. "read_file", "web_search", "execute_command").
+- Do NOT put full observation objects in sources_used.
+- Only one entry per tool, even if used multiple times.
 
 OUTPUT JSON:
 {{
   "response": "string",
   "confidence": 0.0,
-  "sources_used": []
+  "sources_used": ["tool_name_1", "tool_name_2"]
 }}
 """
 
@@ -587,6 +594,12 @@ OUTPUT JSON:
 
         data = self._invoke_llm_with_retry(prompt)
 
+        # Normalize nullable fields that PlannerSchema expects as strings.
+        if data.get("goal") is None:
+            data["goal"] = ""
+        if data.get("thought") is None:
+            data["thought"] = ""
+
         planner = PlannerSchema.model_validate(data)
 
         logger.info(
@@ -826,6 +839,18 @@ OUTPUT JSON:
         )
 
         data = self._invoke_llm_with_retry(prompt)
+
+        # Normalize sources_used: ensure every element is a plain string.
+        # The LLM may sometimes return observation dicts instead of tool names.
+        sources = data.get("sources_used", [])
+        normalized_sources = []
+        for entry in sources:
+            if isinstance(entry, dict):
+                # Prefer the "tool" key if available (set by _observe), else convert to string
+                normalized_sources.append(str(entry.get("tool", entry)))
+            else:
+                normalized_sources.append(str(entry))
+        data["sources_used"] = normalized_sources
 
         final = FinalResponseSchema.model_validate(
             data

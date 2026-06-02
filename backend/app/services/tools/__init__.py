@@ -60,6 +60,7 @@ _FILE_TOOLS      = _safe_import("app.services.tools.file_tools",     "FILE_TOOLS
 _WEB_TOOLS       = _safe_import("app.services.tools.web_tools",      "WEB_TOOLS")
 _PYTHON_TOOLS    = _safe_import("app.services.tools.python_tools",   "PYTHON_TOOLS")
 _HTTP_TOOLS      = _safe_import("app.services.tools.http_tools",     "HTTP_TOOLS")
+_CLI_TOOLS       = _safe_import("app.services.tools.cli_tools",      "CLI_TOOLS")
 
 
 # =========================================================
@@ -71,6 +72,7 @@ ALL_TOOLS: Dict[str, Any] = {
     **_WEB_TOOLS,
     **_PYTHON_TOOLS,
     **_HTTP_TOOLS,
+    **_CLI_TOOLS,
 }
 
 logger.info(

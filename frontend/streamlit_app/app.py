@@ -30,6 +30,33 @@ st.markdown("""
         border-radius: 0.5rem;
         margin-bottom: 1rem;
     }
+    /* Thinking animation styles */
+    .thinking-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 16px;
+        padding: 0.5rem 0;
+    }
+    .thinking-emoji {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    .thinking-dot {
+        animation: blink 1.4s infinite;
+        opacity: 0;
+    }
+    .thinking-dot:nth-child(3) { animation-delay: 0s; }
+    .thinking-dot:nth-child(4) { animation-delay: 0.2s; }
+    .thinking-dot:nth-child(5) { animation-delay: 0.4s; }
+    @keyframes blink {
+        0%, 20% { opacity: 0; }
+        50% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,6 +115,21 @@ def upload_file_with_retry(file, max_retries=3):
         time.sleep(1 * (attempt + 1))
 
     return {"success": False, "error": "Upload failed"}
+
+def show_thinking_animation(placeholder):
+    """Display an animated thinking indicator in the given placeholder."""
+    placeholder.markdown(
+        """
+        <div class="thinking-container">
+            <span class="thinking-emoji">🤔</span>
+            <span>Thinking</span>
+            <span class="thinking-dot">.</span>
+            <span class="thinking-dot">.</span>
+            <span class="thinking-dot">.</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ----------------------------
 # SIDEBAR
@@ -166,28 +208,34 @@ if user_input:
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            result = make_post_request("/agent/", {
-                "message": user_input,
-                "k": 5,
-                "session_id": st.session_state.session_id
-            })
+        # Show animated thinking indicator while waiting for response
+        thinking_placeholder = st.empty()
+        show_thinking_animation(thinking_placeholder)
 
-            if result["success"]:
-                data = result["data"]
+        result = make_post_request("/agent/", {
+            "message": user_input,
+            "k": 5,
+            "session_id": st.session_state.session_id
+        })
 
-                reply = f"""
+        # Clear the thinking animation and show the actual response
+        thinking_placeholder.empty()
+
+        if result["success"]:
+            data = result["data"]
+
+            reply = f"""
 **Analysis:** {data.get("analysis")}
 
 **Route:** {data.get("route")}
 
 **Result:** {data.get("results")}
 """
-                st.markdown(reply)
+            st.markdown(reply)
 
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": reply
-                })
-            else:
-                st.error(result["error"])
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": reply
+            })
+        else:
+            st.error(result["error"])
